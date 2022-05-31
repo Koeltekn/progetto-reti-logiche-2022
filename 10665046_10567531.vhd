@@ -1,3 +1,15 @@
+-- Number of words to be read saved at address 0
+-- First byte of the input sequence saved at address 1
+-- First byte of the output sequence has to be saved from byte 1000 (decimal)
+
+-- First signal to be received is Reset
+-- Before each elaboration, the Start signal must be set to HIGH, and kept HIGH untill the Done signal is set HIGH
+-- The Done signal is set HIGH after the last byte has been saved to memory 
+-- The Done signal must be kept HIGH untill the Start signal is set LOW
+-- A new Start signal cannot be sent until DONE is set LOW
+-- When the Start signal is set HIGH, the convoluter must be reset (state 00)
+
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
