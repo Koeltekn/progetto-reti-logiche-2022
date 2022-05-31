@@ -26,19 +26,19 @@ architecture Behavioral of project_reti_logiche is
     type S is (S0,S1,S2,S3,S4,S5,S6);
     signal cur_state, next_state : S;
 begin
-    process(i_clk, i_res, i_start)
+    process(i_clk, i_rst, i_start)
     begin
-        if(i_res = '1') then
+        if(i_rst = '1') then
             cur_state <= S0;
         elsif rising_edge(i_clk) then
             cur_state <= next_state;
         end if;
     end process;
 
-    process(cur_state, i_start, o_end)
+    process(cur_state, i_start)
     begin
         next_state <= cur_state;
-        case cur_state is
+        -- case cur_state is
             -- when S0 =>
             --     if i_start = '1' then
             --         next_state <= S1;
@@ -63,12 +63,12 @@ begin
             --     next_state <= S6;
             -- when S6 =>
             --     next_state <= S0;
-        end case;
+        -- end case;
     end process;
     
     process(cur_state)
     begin
-        case cur_state is
+        -- case cur_state is
             -- when S0 =>
             -- when S1 =>
             -- when S2 =>
@@ -76,7 +76,7 @@ begin
             -- when S4 =>
             -- when S5 =>
             -- when S6 =>
-        end case;
+        -- end case;
     end process;
 
     serializer: process(i_clk,i_rst)
