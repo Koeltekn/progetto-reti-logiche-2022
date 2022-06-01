@@ -1,3 +1,4 @@
 *.json
 *.cf
 *.vcd
+test_bench.vhd
