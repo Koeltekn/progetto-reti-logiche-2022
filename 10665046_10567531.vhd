@@ -90,7 +90,7 @@ begin
                 when BYTE_READ=>
                     state<=START_SERIALIZE;
                 when START_SERIALIZE=>
-                    if serialization_done='1' then
+                    if serialization_done='1' and deserialize_done='1' then
                         state<=SERIALIZATION_ENDED;
                     end if;
                 when SERIALIZATION_ENDED=>
@@ -127,6 +127,7 @@ begin
                 serialize_enable<='1';
             when SERIALIZATION_ENDED=>
                 serialize_enable<='0';
+                o_done<='1';
         end case;
     end process output_state_function;
 
@@ -137,7 +138,6 @@ begin
             if falling_edge(i_clk) then
                 if counter=4 then
                     serialization_done<='1';
-                    o_done<='1';
                 else
                     serialized_bit<=input_byte(counter);
                     counter:=counter+1;
@@ -179,22 +179,15 @@ begin
         variable counter2:integer;
         variable output_byte: std_logic_vector(7 downto 0);
     begin
-        if deserialize_done='1' then
-            -- Write to memory
-            --o_address<=std_logic_vector(to_unsigned(1000,16));
-            --o_en<='1';
-            o_we<='1';
-            --o_data<=output_byte;
-        elsif deserialize_enable='1' then
+        if deserialize_enable='1' then
             if falling_edge(i_clk) then
-                if counter1=8 then
+                if counter1=6 then
                     deserialize_done<='1';
-                else
-                    output_byte(counter1):=p1;
-                    output_byte(counter2):=p2;
-                    counter1:=counter1+2;
-                    counter2:=counter2+2;
                 end if;
+                output_byte(counter1):=p1;
+                output_byte(counter2):=p2;
+                counter1:=counter1+2;
+                counter2:=counter2+2;
             end if;
         elsif i_start='1' then
             counter1:=0;
