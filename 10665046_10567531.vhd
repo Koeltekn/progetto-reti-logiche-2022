@@ -44,56 +44,80 @@ entity project_reti_logiche is
 end project_reti_logiche;
 
 architecture Behavioral of project_reti_logiche is
+    -- CONSTANTS
+    constant SEQ_LENGTH_ADDRESS: std_logic_vector(15 downto 0):=std_logic_vector(to_unsigned(0,16));
+    constant FIRST_INPUT_ADDRESS: std_logic_vector(15 downto 0):=std_logic_vector(to_unsigned(1,16));
+    constant FIRST_OUTPUT_ADDRESS: std_logic_vector(15 downto 0):=std_logic_vector(to_unsigned(1000,16));
     -- FSA STATE
-    type S is (IDLE, START, READING_NUMBER_OF_BYTES, NUMBER_OF_BYTES_READ, READING_BYTE, BYTE_READ,START_SERIALIZE, SERIALIZATION_ENDED);
-    signal state : S;
+    type S is (
+        RESET,
+        READ_SEQ_LENGTH,READING_SEQ_LENGTH,SEQ_LENGTH_READ,
+        READ_INPUT_BYTE,READING_INPUT_BYTE,INPUT_BYTE_READ,
+        SERIALIZE_LOAD,SERIALIZE_START,SERIALIZING,
+        WRITE_OUTPUT_BYTE,WRITING_OUTPUT_BYTE,OUTPUT_BYTE_WRITTEN
+    );
+    signal state : S:=RESET;
     -- INPUT DATA
-    signal number_of_bytes: integer;
-    signal input_memory_address: std_logic_vector(15 downto 0);
-    signal input_byte: std_logic_vector(0 to 7);
+    signal seq_length:integer:=0;
+    signal input_memory_address: std_logic_vector(15 downto 0):=std_logic_vector(to_unsigned(0,16));
+    signal input_byte: std_logic_vector(7 downto 0):=std_logic_vector(to_unsigned(0,8));
     -- OUTPUT DATA
-    signal output_memory_address: std_logic_vector(15 downto 0);
+    signal output_memory_address: std_logic_vector(15 downto 0):=std_logic_vector(to_unsigned(0,16));
+    signal output_byte: std_logic_vector(7 downto 0):=std_logic_vector(to_unsigned(0,8));
+    -- COMMON SIGNALS
+    signal enable: std_logic:='0';
     -- SERIALIZATION
-    signal serialize_enable: std_logic;
-    signal serialized_bit: std_logic;
-    signal serialization_done: std_logic;
+    signal serializer_load: std_logic:='0';
+    signal serialized_bit: std_logic:='0';
+    signal serializer_counter:integer:=0;
     -- CONVOLUTER
-    signal p1:std_logic;
-    signal p2:std_logic;
-    -- DESERIALIZATION
-    signal deserialize_enable: std_logic;
-    signal deserialize_done:std_logic;
-    -- DEBUG SIGNALS
-    signal counter_deb:integer;
-    signal d1_deb:std_logic;
-    signal d2_deb:std_logic;
-    signal output_byte_db:std_logic_vector(7 downto 0);
+    signal d1:std_logic:='0';
+    signal d2:std_logic:='0';
+    signal p1:std_logic:='0';
+    signal p2:std_logic:='0';
+    -- DEBUG
+    --signal ser_shift_reg_db:std_logic_vector(7 downto 0);
 begin
     next_state_function: process(i_clk, i_rst)
     begin
         if i_rst='1' then
-            state<=IDLE;
+            state<=RESET;
         elsif rising_edge(i_clk) then
             case state is
-                when IDLE =>
+                when RESET =>
                     if i_start='1' then
-                        state<=START;
+                        state<=READ_SEQ_LENGTH;
                     end if;
-                when START =>
-                    state<=READING_NUMBER_OF_BYTES;
-                when READING_NUMBER_OF_BYTES =>
-                    state<=NUMBER_OF_BYTES_READ;
-                when NUMBER_OF_BYTES_READ =>
-                    state<=READING_BYTE;
-                when READING_BYTE=>
-                    state<=BYTE_READ;
-                when BYTE_READ=>
-                    state<=START_SERIALIZE;
-                when START_SERIALIZE=>
-                    if serialization_done='1' and deserialize_done='1' then
-                        state<=SERIALIZATION_ENDED;
+                when READ_SEQ_LENGTH =>
+                    state<=READING_SEQ_LENGTH;
+                when READING_SEQ_LENGTH =>
+                    state<=SEQ_LENGTH_READ;
+                when SEQ_LENGTH_READ =>
+                    state<=READ_INPUT_BYTE;
+                when READ_INPUT_BYTE =>
+                    state<=READING_INPUT_BYTE;
+                when READING_INPUT_BYTE =>
+                    state<=INPUT_BYTE_READ;
+                when INPUT_BYTE_READ =>
+                    state<=SERIALIZE_LOAD;
+                when SERIALIZE_LOAD =>
+                    state<=SERIALIZE_START;
+                when SERIALIZE_START =>
+                    state<=SERIALIZING;
+                when SERIALIZING =>
+                    if serializer_counter=4 or serializer_counter=9 then
+                        state<=WRITE_OUTPUT_BYTE;
+                    else
                     end if;
-                when SERIALIZATION_ENDED=>
+                when WRITE_OUTPUT_BYTE =>
+                    state<=WRITING_OUTPUT_BYTE;
+                when WRITING_OUTPUT_BYTE =>
+                    state<=OUTPUT_BYTE_WRITTEN;
+                when OUTPUT_BYTE_WRITTEN =>
+                    if serializer_counter=5 then
+                        state<=SERIALIZE_START;
+                    end if;
+                when others =>
             end case;
         end if;
     end process next_state_function;
@@ -101,100 +125,78 @@ begin
     output_state_function: process(state)
     begin
         case state is
-            when IDLE =>
-            when START =>
-                -- Reset signals for new elaboration
-                serialize_enable<='0';
-                number_of_bytes<=0;
-                input_memory_address<=std_logic_vector(to_unsigned(1,16));
-                output_memory_address<=std_logic_vector(to_unsigned(1000,16));
-                input_byte<=std_logic_vector(to_unsigned(0,8));
-                -- Read number of bytes from memory
-                o_address<=std_logic_vector(to_unsigned(0,16));
+            when RESET =>
+                input_memory_address<=FIRST_INPUT_ADDRESS;
+                output_memory_address<=FIRST_OUTPUT_ADDRESS;
+                enable<='0';
+                serializer_load<='0';
+            when READ_SEQ_LENGTH =>
+                o_address<=SEQ_LENGTH_ADDRESS;
                 o_en<='1';
                 o_we<='0';
-            when READING_NUMBER_OF_BYTES =>
-            when NUMBER_OF_BYTES_READ =>
-                -- Save the number of bytes to be converted
-                number_of_bytes<=to_integer(unsigned(i_data));
-                -- Read the first byte
-                o_address<=input_memory_address;
-            when READING_BYTE=>
-            when BYTE_READ=>
+            when SEQ_LENGTH_READ =>
+                seq_length<=to_integer(unsigned(i_data));
                 o_en<='0';
+            when READ_INPUT_BYTE =>
+                o_address<=input_memory_address;
+                o_en<='1';
+                o_we<='0';
+            when INPUT_BYTE_READ =>
                 input_byte<=i_data;
-            when START_SERIALIZE=>
-                serialize_enable<='1';
-            when SERIALIZATION_ENDED=>
-                serialize_enable<='0';
-                o_done<='1';
+                o_en<='0';
+            when SERIALIZE_LOAD =>
+                serializer_load<='1';
+            when SERIALIZE_START =>
+                serializer_load<='0';
+                enable<='1';
+            when WRITE_OUTPUT_BYTE =>
+                enable<='0';
+                o_address<=output_memory_address;
+                o_en<='1';
+                o_we<='1';
+                O_data<=output_byte;
+            when OUTPUT_BYTE_WRITTEN =>
+                o_en<='0';
+                o_we<='0';
+                output_memory_address<=std_logic_vector(unsigned(output_memory_address)+1);
+            when others =>
         end case;
     end process output_state_function;
 
-    serializer: process(i_clk,i_start)
-        variable counter:integer;
+    ser_conv_des: process(i_clk,i_rst)
+        variable ser_shift_reg:std_logic_vector(7 downto 0):=std_logic_vector(to_unsigned(0,8));
     begin
-        if serialize_enable='1' then
-            if falling_edge(i_clk) then
-                if counter=4 then
-                    serialization_done<='1';
-                else
-                    serialized_bit<=input_byte(counter);
-                    counter:=counter+1;
-                end if;   
-            end if;
-        elsif i_start='1' then
-            counter:=0;
-            serialization_done<='0';
-            serialized_bit<='U';
-        end if;
-        counter_deb<=counter;
-    end process serializer;
-
-    convoluter: process(i_clk,i_start)
-        variable d1:std_logic;
-        variable d2:std_logic;       
-    begin
-        if serialize_enable='1' then
-            if rising_edge(i_clk) then
-                p1<=serialized_bit xor d2;
-                p2<=serialized_bit xor d1 xor d2;
-                d2:=d1;
-                d1:=serialized_bit;
-                deserialize_enable<='1';
-            end if;
-        elsif i_start='1' then
-            d1:='0';
-            d2:='0';
+        if i_rst='1' then
+            ser_shift_reg:=std_logic_vector(to_unsigned(0,8));
+            d1<='0';
+            d2<='0';
             p1<='0';
             p2<='0';
-            deserialize_enable<='0';
-        end if;
-        d1_deb<=d1;
-        d2_deb<=d2;
-    end process convoluter;
-
-    deserializer: process(i_clk,i_start)
-        variable counter1:integer;
-        variable counter2:integer;
-        variable output_byte: std_logic_vector(7 downto 0);
-    begin
-        if deserialize_enable='1' then
-            if falling_edge(i_clk) then
-                if counter1=6 then
-                    deserialize_done<='1';
+            output_byte<=std_logic_vector(to_unsigned(0,8));
+        else
+            if rising_edge(i_clk) then
+                if serializer_load='1' then
+                    ser_shift_reg:=input_byte;
+                elsif enable='1' and serializer_counter<9 then
+                    -- Serializer
+                    serialized_bit<=ser_shift_reg(7);
+                    ser_shift_reg := ser_shift_reg( 6 downto 0) & '0';
+                    serializer_counter<=serializer_counter+1;
+                    
+                    -- Deserializer
+                    output_byte <= output_byte(5 downto 0) & p1 & p2;
                 end if;
-                output_byte(counter1):=p1;
-                output_byte(counter2):=p2;
-                counter1:=counter1+2;
-                counter2:=counter2+2;
             end if;
-        elsif i_start='1' then
-            counter1:=0;
-            counter2:=1;
-            deserialize_done<='0';
-            output_byte:=std_logic_vector(to_unsigned(0,8));
+            if falling_edge(i_clk) then
+                if enable='1' and serializer_counter<9 then
+                    -- Convoluter
+                    p1<=serialized_bit xor d2;
+                    p2<=serialized_bit xor d1 xor d2;
+                    d2<=d1;
+                    d1<=serialized_bit;
+                end if;
+            end if;
         end if;
-        output_byte_db<=output_byte;
-    end process deserializer;
+        --ser_shift_reg_db<=ser_shift_reg;
+    end process ser_conv_des;    
 end Behavioral;
