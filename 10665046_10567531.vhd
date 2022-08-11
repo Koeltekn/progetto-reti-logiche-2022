@@ -67,6 +67,7 @@ architecture Behavioral of project_reti_logiche is
     signal output_byte: std_logic_vector(7 downto 0);
     -- COMMON SIGNALS
     signal enable: std_logic;
+    signal res:std_logic;
     --signal seq_counter:integer;
     -- SERIALIZATION
     signal serializer_load: std_logic;
@@ -78,18 +79,19 @@ architecture Behavioral of project_reti_logiche is
     signal d2:std_logic:='0';
     signal p1:std_logic:='0';
     signal p2:std_logic:='0';
-    -- DEBUG
-    signal ser_shift_reg_db:std_logic_vector(7 downto 0);
 begin
     next_state_function: process(i_clk, i_rst,i_start)
     begin
         if i_rst='1' then
             state<=RESET;
-        elsif i_start='1' and state=DONE then
-            state<=RESET;
+        elsif falling_edge(i_start) and state=DONE then
+            state<=IDLE;
         elsif rising_edge(i_clk) then
             case state is
                 when IDLE =>
+                    if i_start='1' then
+                        state<=RESET;
+                    end if;
                 when RESET =>
                     if i_start='1' then
                         state<=READ_SEQ_LENGTH;
@@ -101,7 +103,11 @@ begin
                 when SEQ_LENGTH_READ =>
                     state<=READ_INPUT_BYTE;
                 when READ_INPUT_BYTE =>
-                    state<=READING_INPUT_BYTE;
+                    if seq_length>0 then
+                        state<=READING_INPUT_BYTE;
+                    else
+                        state<=DONE;
+                    end if;
                 when READING_INPUT_BYTE =>
                     state<=INPUT_BYTE_READ;
                 when INPUT_BYTE_READ =>
@@ -135,6 +141,7 @@ begin
 
     output_state_function: process(state)
     begin
+        res<='0';
         case state is
             when IDLE =>
                 o_en<='0';
@@ -150,6 +157,7 @@ begin
                 enable<='0';
                 serializer_load<='0';
                 o_done<='0';
+                res<='1';
             when READ_SEQ_LENGTH =>
                 o_en<='1';
                 o_we<='0';
@@ -244,9 +252,9 @@ begin
         end case;
     end process output_state_function;
 
-    counter: process(i_clk,i_rst)
+    counter: process(i_clk,i_rst,res)
     begin
-        if i_rst='1' then
+        if i_rst='1' or res='1' then
             seq_length<=0;
         elsif rising_edge(i_clk) then
             case state is
@@ -261,9 +269,9 @@ begin
         end if;
     end process counter;
 
-    address_generator: process(i_clk,i_rst)
+    address_generator: process(i_clk,i_rst,res)
     begin
-        if i_rst='1' then
+        if i_rst='1' or res='1' then
             input_memory_address<=FIRST_INPUT_ADDRESS;
             output_memory_address<=FIRST_OUTPUT_ADDRESS;
         elsif rising_edge(i_clk) then
@@ -309,10 +317,10 @@ begin
         end if;
     end process output_address_generator;
 
-    serializer: process(i_clk,i_rst)
+    serializer: process(i_clk,i_rst,res)
         variable ser_shift_reg:std_logic_vector(7 downto 0):=std_logic_vector(to_unsigned(0,8));
     begin
-        if i_rst='1' then
+        if i_rst='1' or res='1' then
             ser_shift_reg:=std_logic_vector(to_unsigned(0,8));
             serializer_counter<=0;
             serializer_done<='0';
@@ -331,12 +339,11 @@ begin
                 end if;
             end if;
         end if;
-        ser_shift_reg_db<=ser_shift_reg;
     end process serializer;
     
-    convoluter:process(i_clk,i_rst)
+    convoluter:process(i_clk,i_rst,res)
     begin
-        if i_rst='1' then
+        if i_rst='1' or res='1' then
             d1<='0';
             d2<='0';
             p1<='0';
@@ -351,9 +358,9 @@ begin
         end if;
     end process convoluter;
     
-    deserializer: process(i_clk,i_rst)
+    deserializer: process(i_clk,i_rst,res)
     begin
-        if i_rst='1' then
+        if i_rst='1' or res='1' then
             output_byte<=std_logic_vector(to_unsigned(0,8));
         elsif rising_edge(i_clk) then
             if enable='1' and serializer_counter<9 then
