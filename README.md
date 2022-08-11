@@ -6,7 +6,7 @@ Successful Testbenches:
 - Tb4   ❌
 - Tb5   ❌
 - Tb6   ✅
-- Tb7   ❌
+- Tb7   ✅
 - Tb8   ✅
 - Tb9   ✅
 - Tb10  ✅
