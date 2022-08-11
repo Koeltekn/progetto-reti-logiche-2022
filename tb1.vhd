@@ -93,16 +93,16 @@ begin
     wait until tb_done = '0';
     wait for 100 ns;
     
-    -- assert RAM(1000) = STD_LOGIC_VECTOR(TO_UNSIGNED(1, 8)) report "TEST FALLITO" severity failure;
-    -- assert RAM(1001) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
-    -- assert RAM(1002) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
-    -- assert RAM(1003) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
-    -- assert RAM(1004) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
-    -- assert RAM(1005) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
-    -- assert RAM(1006) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
-    -- assert RAM(1007) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
-    -- assert RAM(1008) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
-    -- assert RAM(1009) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
+    assert RAM(1000) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
+    assert RAM(1001) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
+    assert RAM(1002) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
+    assert RAM(1003) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
+    assert RAM(1004) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
+    assert RAM(1005) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
+    assert RAM(1006) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
+    assert RAM(1007) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
+    assert RAM(1008) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
+    assert RAM(1009) = STD_LOGIC_VECTOR(TO_UNSIGNED(0, 8)) report "TEST FALLITO" severity failure;
     
     assert false report "Simulation Ended! TEST PASSATO" severity failure;
 
