@@ -1,29 +1,3 @@
--- Number of words to be read saved at address 0
--- First byte of the input sequence saved at address 1
--- First byte of the output sequence has to be saved from byte 1000 (decimal)
------------------------------------------------------------------------------------------
--- First signal to be received is Reset
--- Before each elaboration, the Start signal must be set to HIGH, and kept HIGH untill the Done signal is set HIGH
--- The Done signal is set HIGH after the last byte has been saved to memory 
--- The Done signal must be kept HIGH untill the Start signal is set LOW
--- A new Start signal cannot be sent until DONE is set LOW
--- When the Start signal is set HIGH, the convoluter must be reset (state 00)
------------------------------------------------------------------------------------------
--- Memory writing is asynchronous, memory reading is synchronous (the data gets read after 1 clock cycle)
------------------------------------------------------------------------------------------
--- To read from memory
--- o_address set to the memory address to be read
--- o_en set to high
--- o_we set to low
--- read data is in i_data (AFTER 1 CLOCK CYCLE)
------------------------------------------------------------------------------------------
--- To write to memory
--- o_address set to the memory address to be written into
--- o_en set to high
--- o_we set to high
--- o_data set to the data to be written
-
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -79,13 +53,13 @@ architecture Behavioral of project_reti_logiche is
     signal d2:std_logic:='0';
     signal p1:std_logic:='0';
     signal p2:std_logic:='0';
+    -- DEBUG
+    --signal ser_shift_reg_db:std_logic_vector(7 downto 0);
 begin
     next_state_function: process(i_clk, i_rst,i_start)
     begin
         if i_rst='1' then
             state<=RESET;
-        elsif falling_edge(i_start) and state=DONE then
-            state<=IDLE;
         elsif rising_edge(i_clk) then
             case state is
                 when IDLE =>
@@ -135,119 +109,52 @@ begin
                         state<=SERIALIZE_START;
                     end if;
                 when DONE =>
+                    if i_start='0' then
+                        state<=IDLE;
+                    end if;
             end case;
         end if;
     end process next_state_function;
 
     output_state_function: process(state)
     begin
+        o_en<='0';
+        o_we<='0';
+        o_data<=VALUE_ZERO;
+        enable<='0';
+        serializer_load<='0';
+        o_done<='0';
         res<='0';
         case state is
             when IDLE =>
-                o_en<='0';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
-                enable<='0';
-                serializer_load<='0';
-                o_done<='0';
             when RESET =>
-                o_en<='0';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
-                enable<='0';
-                serializer_load<='0';
-                o_done<='0';
                 res<='1';
             when READ_SEQ_LENGTH =>
                 o_en<='1';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
-                enable<='0';
-                serializer_load<='0';
-                o_done<='0';
             when READING_SEQ_LENGTH =>
                 o_en<='1';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
-                enable<='0';
-                serializer_load<='0';
-                o_done<='0';
             when SEQ_LENGTH_READ =>
-                o_en<='0';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
-                enable<='0';
-                serializer_load<='0';
-                o_done<='0';
             when READ_INPUT_BYTE =>
                 o_en<='1';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
-                enable<='0';
-                serializer_load<='0';
-                o_done<='0';
             when READING_INPUT_BYTE =>
                 o_en<='1';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
-                enable<='0';
-                serializer_load<='0';
-                o_done<='0';
             when INPUT_BYTE_READ =>
-                o_en<='0';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
-                enable<='0';
-                serializer_load<='0';
-                o_done<='0';
             when SERIALIZE_LOAD =>
-                o_en<='0';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
-                enable<='0';
                 serializer_load<='1';
-                o_done<='0';
             when SERIALIZE_START =>
-                o_en<='0';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
                 enable<='1';
-                serializer_load<='0';
-                o_done<='0';
             when SERIALIZING =>
-                o_en<='0';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
                 enable<='1';
-                serializer_load<='0';
-                o_done<='0';
             when WRITE_OUTPUT_BYTE =>
                 o_en<='1';
                 o_we<='1';
                 o_data<=output_byte;
-                enable<='0';
-                serializer_load<='0';
-                o_done<='0';
             when WRITING_OUTPUT_BYTE =>
                 o_en<='1';
                 o_we<='1';
                 o_data<=output_byte;
-                enable<='0';
-                serializer_load<='0';
-                o_done<='0';
             when OUTPUT_BYTE_WRITTEN =>
-                o_en<='0';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
-                enable<='0';
-                serializer_load<='0';
-                o_done<='0';
             when DONE =>
-                o_en<='0';
-                o_we<='0';
-                o_data<=VALUE_ZERO;
-                enable<='0';
-                serializer_load<='0';
                 o_done<='1';
         end case;
     end process output_state_function;
@@ -286,7 +193,7 @@ begin
         end if;
     end process address_generator;
     
-    output_address_generator: process(i_clk,i_rst)
+    output_address_generator: process(i_clk)
     begin
         if rising_edge(i_clk) then
             case state is
