@@ -1,7 +1,7 @@
 Successful Testbenches:
 
 - Tb1   ✅
-- Tb2   ❌
+- Tb2   ✅
 - Tb3   ❌
 - Tb4   ❌
 - Tb5   ❌
