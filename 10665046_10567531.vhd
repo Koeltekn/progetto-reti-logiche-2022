@@ -42,7 +42,6 @@ architecture Behavioral of project_reti_logiche is
     -- COMMON SIGNALS
     signal enable: std_logic;
     signal res:std_logic;
-    --signal seq_counter:integer;
     -- SERIALIZATION
     signal serializer_load: std_logic;
     signal serialized_bit: std_logic:='0';
@@ -53,8 +52,7 @@ architecture Behavioral of project_reti_logiche is
     signal d2:std_logic:='0';
     signal p1:std_logic:='0';
     signal p2:std_logic:='0';
-    -- DEBUG
-    --signal ser_shift_reg_db:std_logic_vector(7 downto 0);
+
 begin
     next_state_function: process(i_clk, i_rst,i_start)
     begin
