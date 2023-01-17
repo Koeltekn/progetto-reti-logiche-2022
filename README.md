@@ -17,3 +17,5 @@ More info:
 | Slack time | Number of Latches |
 | --- | --- |
 | 0.213ns | **ZERO** |
+
+Final grade: 30
